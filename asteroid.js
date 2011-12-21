@@ -78,7 +78,6 @@ var Asteroid = function(canvas) {
 
         ctx.fillStyle = "#FFF"
         ctx.font = "34px HelveticaNeue"
-        //ctx.fillText("Loading images...", canvas.width/2-100, canvas.height/2-10)
         $(canvas).bind("mouseup", function(e) {})
 
 	ctx.fillText("Click to Start", canvas.width/2-100, canvas.height/2-10)
@@ -86,8 +85,9 @@ var Asteroid = function(canvas) {
 	$(canvas).bind("mouseup", function(e) {
 		if(world) return
 
-		ctx.clearRect(0,0,canvas.width, canvas.height)
 		$(canvas).bind("mouseup", function(e){})
+                ctx.clearRect(0,0,canvas.width, canvas.height)
+                ctx.fillText("Loading images...", canvas.width/2-100, canvas.height/2-10)
 
 		imagesForLevel(level, function(images) {
 			createWorldWithImages(images)
