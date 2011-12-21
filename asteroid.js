@@ -75,12 +75,15 @@ var Asteroid = function(canvas) {
 
     function createMenu() {
         ctx.clearRect(0,0,canvas.width, canvas.height)
-
-        ctx.fillStyle = "#FFF"
-        ctx.font = "34px HelveticaNeue"
         $(canvas).bind("mouseup", function(e) {})
 
+        ctx.fillStyle = "#FFF"
+
+        ctx.font = "34px HelveticaNeue"
 	ctx.fillText("Click to Start", canvas.width/2-100, canvas.height/2-10)
+
+        ctx.font = "22px HelveticaNeue"
+        ctx.fillText("(Arrows to move, Space to shoot)", canvas.width/2-100, canvas.height/2+20)
 
 	$(canvas).bind("mouseup", function(e) {
 		if(world) return
@@ -291,13 +294,24 @@ var Asteroid = function(canvas) {
 
 
     // keyboard
+    var canFire = true
     var keysPressed = {}
-    setInterval(function() { if(keysPressed[32]) fire() }, fire_repeat_rate)
+
+    setInterval(function() { 
+        canFire = true 
+
+        if(keysPressed[32])
+            fire()
+
+        }, fire_repeat_rate)
 
     document.addEventListener("keydown", function(e) {
             var charCode = e.charCode? e.charCode : e.keyCode
 		
             keysPressed[charCode] = true
+
+            if(charCode == 32 && canFire) 
+                fire()
     })
 
     document.addEventListener("keyup", function(e) {
@@ -308,6 +322,8 @@ var Asteroid = function(canvas) {
 
 
     function fire() {
+            canFire = false
+
             if(!player) return
 
             score += points_per_shot
