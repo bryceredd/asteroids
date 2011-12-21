@@ -52,51 +52,23 @@ var Asteroid = function(canvas) {
 
         var images = []
         var imageList = this.imageList || []
+        var totalImages = level*additional_showcards_per_level+base_showcards
+        var loadedImages = 0
+
+        console.log('loading '+totalImages)
 
 	// hack for now
-	for(var i=0; i<level*additional_showcards_per_level+base_showcards; i++)
-		images.push("")
-	cb(images)
+	for(var i=0; i<totalImages; i++) {
+            var image = new Image()
 
-        getImageList(function(list) {
-            imageList = list
+            image.onload = function() { 
 
-            var images = []
-            var start = startItemForLevel(level)
-            var end = startItemForLevel(level+1)
-
-            for(var i = start; i<end; i++) {
-
-                var image = new Image()
-                image.onLoad = function() { 
-                    images.push(image) 
-                    if(images.length == end-start) cb(images)
-                }
-
-                image.src = imageList[i]
+                if(++loadedImages == totalImages) { cb(images) }
             }
-        })
 
+            images[i] = image
 
-
-        // functions i'll use later
-
-        function startItemForLevel(level) {
-            return base_showcards*level + ((level*(level+1))/2)
-        }
-
-        function getImageList(cb) {
-            if(imageList.length) cb(imageList)
-
-            $.get("http://test.i.tv/shows/lists/mostfavorited", function(data) {
-                    console.log(data)
-                    var list = []
-                    for(var i=0; i<data.shows.length; i++) {
-                        list.push("http://img.i.tv/images/reality/website/undefined/"+data.shows[i].showcardId+".jpg")
-                    }
-                    cb(list)
-                }
-            )
+            image.src = "http://lorempixum.com/96/128?nocache" + i + new Date().getTime()
         }
     }
 
@@ -167,15 +139,18 @@ var Asteroid = function(canvas) {
 		
                     var type1 = body1.GetUserData().type
                     var type2 = body2.GetUserData().type
+
+                    var image1 = body1.GetUserData().image
+                    var image2 = body2.GetUserData().image
 		
                     if(type1 == type_bullet && type2 == type_asteroid) {
                             body1.SetUserData({type:type_dead})
-                            body2.SetUserData({type:type_dead_asteroid})
+                            body2.SetUserData({type:type_dead_asteroid, image:image2})
                             score += points_per_showcard_dead 
                     } 
                     
                     if(type1 == type_asteroid && type2 == type_bullet) {
-                            body1.SetUserData({type:type_dead_asteroid})
+                            body1.SetUserData({type:type_dead_asteroid, image:image1})
                             body2.SetUserData({type:type_dead})
                             score += points_per_showcard_dead
                     }
@@ -230,7 +205,7 @@ var Asteroid = function(canvas) {
          var fixDef = new b2FixtureDef
          fixDef.density = 1.0
          fixDef.friction = 0.5
-         fixDef.restitution = 0.8
+         fixDef.restitution = 1.0 // its important to keep all the kinetic energy in the game at a constant
          
          var bodyDef = new b2BodyDef
          bodyDef.type = b2Body.b2_dynamicBody
@@ -251,7 +226,7 @@ var Asteroid = function(canvas) {
         asteroid.ApplyTorque((Math.random()-.5)*2000)
     }
 
-    function createSmallAsteroids(showcard, position, angle) {
+    function createSmallAsteroids(image, position, angle) {
 
         for(var i=0; i<max_actors_per_showcard; i++) {
 
@@ -262,7 +237,7 @@ var Asteroid = function(canvas) {
             var fixDef = new b2FixtureDef
             fixDef.density = 1.0
             fixDef.friction = 0.5
-            fixDef.restitution = 0.8
+            fixDef.restitution = 1.0
          
             var bodyDef = new b2BodyDef
             bodyDef.type = b2Body.b2_dynamicBody
@@ -273,7 +248,7 @@ var Asteroid = function(canvas) {
             bodyDef.position.y = position.y+rotated_y
 
             var asteroid = world.CreateBody(bodyDef)
-            asteroid.SetUserData({type:type_asteroid_child, piece:i})
+            asteroid.SetUserData({type:type_asteroid_child, piece:i, image:image})
             asteroid.CreateFixture(fixDef);
             asteroid.SetPositionAndAngle(bodyDef.position, angle)
             asteroid.ApplyForce(new b2Vec2((Math.random()-.5)*2600, (Math.random()-.5)*2600), bodyDef.position) // up
@@ -399,6 +374,7 @@ var Asteroid = function(canvas) {
                 var size = {width:1.5*30, height:2*30}
                 var position = body.GetPosition()
                 var piece = body.GetUserData().piece
+                var image = body.GetUserData().image
 
                 var pos_x = (piece == 1 || piece == 2)? 0 : 1
                 var pos_y = (piece == 0 || piece == 1)? 1 : 0
@@ -448,9 +424,12 @@ var Asteroid = function(canvas) {
 
                     // we're also removing destroyed bodies here, it doesn't fit with the function name
                     // but it prevents us from looping the bodies again on the same world tick
-                    if(body.GetUserData() && body.GetUserData().type == type_dead) world.DestroyBody(body) 
+                    if(body.GetUserData() && body.GetUserData().type == type_dead) 
+                        world.DestroyBody(body) 
+
                     if(body.GetUserData() && body.GetUserData().type == type_dead_asteroid) {
-                        createSmallAsteroids({}, body.GetPosition(), body.GetAngle())
+                        var image = body.GetUserData().image
+                        createSmallAsteroids(image, body.GetPosition(), body.GetAngle())
                         world.DestroyBody(body)
                     }
 
